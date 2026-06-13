@@ -6,6 +6,16 @@ Xây dựng một backend nhỏ đóng vai trò cầu nối giữa hệ điều 
 
 Tool này không cần bao phủ toàn bộ hàng ngàn endpoint trong bộ API specs. Phạm vi ban đầu chỉ tập trung vào khoảng 20 endpoint thật sự cần thiết cho luồng vận hành của khách sạn, giúp hệ thống nhẹ, dễ bảo trì và dễ kiểm soát lỗi.
 
+## Middleware cần:
+Nhận dữ liệu qua MQTT (ví dụ từ IoT, PMS, thiết bị, hệ thống khác).
+Gọi nhiều API HTTP cùng lúc.
+Xử lý đồng thời (concurrent).
+Retry khi lỗi.
+Mở rộng dễ dàng.
+
+Cụ thể nên dùng:
+aiomqtt + httpx + asyncio
+
 ## Bối cảnh
 
 Repository hiện tại cung cấp:

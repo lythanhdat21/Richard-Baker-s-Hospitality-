@@ -19,5 +19,9 @@ class Settings(BaseSettings):
     opera_hotel_id: str = ""
     opera_token_ttl: int = 3300
 
+    mqtt_host: str = "mqtt"
+    mqtt_port: int = 1883
+    mqtt_client_id: str = "opera-bridge"
+
 
 settings = Settings()
