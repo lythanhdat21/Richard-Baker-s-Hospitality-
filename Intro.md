@@ -19,7 +19,7 @@ opera-bridge/
 ├── pyproject.toml       (pytest, ruff config)
 └── .env.example
 
-cd opera-bridge
+
 
 # 1. Sao chép cấu hình
 cp .env.example .env
@@ -27,6 +27,7 @@ cp .env.example .env
 
 # 2. Chạy bằng Docker
 wsl
+cd opera-bridge
 docker compose up --build
 
 # Hoặc chạy local
