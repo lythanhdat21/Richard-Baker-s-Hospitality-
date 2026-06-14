@@ -1,4 +1,6 @@
-from src.app.mappers import reservation_mapper, room_mapper, guest_mapper
+from decimal import Decimal
+
+from src.app.mappers import folio_mapper, guest_mapper, reservation_mapper, room_mapper
 from src.app.schemas.internal.reservation import ReservationSearchRequest
 
 
@@ -71,3 +73,43 @@ def test_to_internal_guest():
     assert guest.last_name == "Van A"
     assert guest.email == "test@example.com"
     assert guest.nationality == "VN"
+
+
+def test_to_internal_folio_summary_filters_sensitive_payment_data():
+    opera_folio = {
+        "reservationFolioInformation": {
+            "postStayChargeAllowed": True,
+            "roomAndTaxPosted": False,
+            "folioWindows": [
+                {
+                    "folioWindowNo": 1,
+                    "balance": {"amount": "120.50", "currencyCode": "USD"},
+                    "revenue": {"amount": "200.50", "currencyCode": "USD"},
+                    "payment": {"amount": "80.00", "currencyCode": "USD"},
+                    "paymentMethod": {"cardNumber": "4111111111111111"},
+                    "folios": [{"folioNo": 10}, {"folioNo": 11}],
+                    "confidential": True,
+                }
+            ],
+        }
+    }
+
+    folio = folio_mapper.to_internal_folio_summary(opera_folio, "RES001")
+
+    assert folio.reservation_id == "RES001"
+    assert folio.windows[0].window_no == 1
+    assert folio.windows[0].balance.amount == Decimal("120.50")
+    assert folio.windows[0].balance.currency_code == "USD"
+    assert folio.windows[0].folio_count == 2
+    assert not hasattr(folio.windows[0], "paymentMethod")
+
+
+def test_to_internal_payment_status_marks_zero_balance_as_paid():
+    status = folio_mapper.to_internal_payment_status(
+        {"paymentBalance": {"amount": "0.00", "currencyCode": "USD"}},
+        "RES001",
+    )
+
+    assert status.reservation_id == "RES001"
+    assert status.balance.amount == Decimal("0.00")
+    assert status.is_paid is True

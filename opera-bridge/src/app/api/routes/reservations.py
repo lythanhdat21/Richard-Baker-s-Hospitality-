@@ -1,8 +1,10 @@
 import uuid
+
 from fastapi import APIRouter, Depends, Query
-from src.app.core.security import require_internal_api_key
-from src.app.services import reservation_service
+
+from src.app.core.security import require_cashiering_access, require_internal_api_key
 from src.app.schemas.internal.reservation import ReservationSearchRequest
+from src.app.services import folio_service, reservation_service
 
 router = APIRouter(prefix="/reservations", tags=["Reservations"])
 
@@ -47,4 +49,24 @@ async def check_in(reservation_id: str):
 async def check_out(reservation_id: str):
     trace_id = _trace()
     data = await reservation_service.check_out(reservation_id, trace_id)
+    return {"success": True, "data": data.model_dump()}
+
+
+@router.get("/{reservation_id}/folio")
+async def get_folio_summary(
+    reservation_id: str,
+    actor_role: str = Depends(require_cashiering_access),
+):
+    trace_id = _trace()
+    data = await folio_service.get_folio_summary(reservation_id, trace_id, actor_role)
+    return {"success": True, "data": data.model_dump()}
+
+
+@router.get("/{reservation_id}/payment-status")
+async def get_payment_status(
+    reservation_id: str,
+    actor_role: str = Depends(require_cashiering_access),
+):
+    trace_id = _trace()
+    data = await folio_service.get_payment_status(reservation_id, trace_id, actor_role)
     return {"success": True, "data": data.model_dump()}

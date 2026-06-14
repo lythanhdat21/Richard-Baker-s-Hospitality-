@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     log_level: str = "INFO"
 
     internal_api_key: str = "change-me-in-production"
+    cashiering_allowed_roles: str = "admin,cashiering,front-desk-manager"
 
     database_url: str = "postgresql://opera_user:opera_pass@localhost:5432/opera_bridge"
 
