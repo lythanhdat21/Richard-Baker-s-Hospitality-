@@ -3,7 +3,7 @@ import json
 import aiomqtt
 from src.app.core.config import settings
 from src.app.core.logging import get_logger
-from src.app.mqtt.topics import SUBSCRIBE_PATTERN, parse_topic
+from src.app.mqtt.topics import SUBSCRIBE_PATTERN, RCU_SUBSCRIBE_PATTERN, parse_topic, parse_rcu_topic
 from src.app.mqtt.handlers import reservation_handler, room_handler
 from src.app.services import sync_service
 import uuid
@@ -14,6 +14,13 @@ RECONNECT_DELAY = 5  # giây chờ trước khi reconnect
 
 
 async def _dispatch(client: aiomqtt.Client, topic: str, data: dict) -> None:
+    # Legrand RCU: SMARTHOTEL/STATUS/ROOMSTATUS/{project_id}/{room_id}
+    rcu = parse_rcu_topic(topic)
+    if rcu is not None:
+        project_id, room_id = rcu
+        await room_handler.handle_rcu_status(client, topic, data, project_id=project_id, room_id=room_id)
+        return
+
     action, parts = parse_topic(topic)
 
     # hotel/{hotel_id}/reservation/search/request
@@ -75,7 +82,8 @@ async def run_subscriber() -> None:
                 identifier=settings.mqtt_client_id,
             ) as client:
                 await client.subscribe(SUBSCRIBE_PATTERN)
-                logger.info("mqtt_subscribed", pattern=SUBSCRIBE_PATTERN)
+                await client.subscribe(RCU_SUBSCRIBE_PATTERN)
+                logger.info("mqtt_subscribed", patterns=[SUBSCRIBE_PATTERN, RCU_SUBSCRIBE_PATTERN])
 
                 async for message in client.messages:
                     # Mỗi message chạy trong task riêng, không block subscriber loop

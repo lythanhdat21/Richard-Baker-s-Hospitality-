@@ -1,0 +1,23 @@
+{
+  "floorList": [
+    {
+      "floorNo": 10,
+      "roomList": [
+        {
+          "airMode": 9,
+          "airNo": 0,
+          "roomNo": "1001",
+          "roomStatus": 2,
+          "roomTypeNo": 10001
+        },
+        {
+          "airMode": 9,
+          "airNo": 0,
+          "roomNo": "1002",
+          "roomStatus": 4,
+          "roomTypeNo": 10002
+        }
+      ] 
+    }
+  ]
+}

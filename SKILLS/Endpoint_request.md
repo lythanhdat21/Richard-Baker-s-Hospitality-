@@ -1,14 +1,4 @@
-Listed directory hospitality-api-docs
-
-Searched for "endpoint"
-
-Viewed Y\_TUONG\_TOOL\_CAU\_NOI\_OPERA\_CLOUD.md:1-358
-
-Viewed PROJECT\_STRUCTURE\_VA\_LUONG\_HOAT\_DONG.md:1-671
-
-
-
-Dựa vào các tài liệu trong dự án (đặc biệt là file `Y\_TUONG\_TOOL\_CAU\_NOI\_OPERA\_CLOUD.md` và `PROJECT\_STRUCTURE\_VA\_LUONG\_HOAT\_DONG.md`), khách hàng \*\*không yêu cầu bao phủ toàn bộ\*\* hàng ngàn endpoint của Oracle Hospitality API. 
+Dựa vào các tài liệu trong dự án (đặc biệt là file `Y\\\\\\\_TUONG\\\\\\\_TOOL\\\\\\\_CAU\\\\\\\_NOI\\\\\\\_OPERA\\\\\\\_CLOUD.md` và `PROJECT\\\\\\\_STRUCTURE\\\\\\\_VA\\\\\\\_LUONG\\\\\\\_HOAT\\\\\\\_DONG.md`), khách hàng \*\*không yêu cầu bao phủ toàn bộ\*\* hàng ngàn endpoint của Oracle Hospitality API.
 
 
 
@@ -44,17 +34,7 @@ Cụ thể, các nhóm endpoint nội bộ tối thiểu (đóng vai trò cầu 
 
 
 
-4\. \*\*Cashiering / Folio:\*\*
-
-&#x20;  - `GET /reservations/{id}/folio` (Lấy folio cơ bản của reservation, chỉ trả về các trường cần thiết cho vận hành)
-
-&#x20;  - `GET /reservations/{id}/payment-status` (Kiểm tra trạng thái thanh toán/tổng còn phải thu, không trả về thông tin thẻ hoặc dữ liệu thanh toán nhạy cảm)
-
-&#x20;  - Nhóm endpoint này cần kiểm soát quyền truy cập chặt chẽ hơn các nhóm thông thường: phân quyền theo vai trò, ghi audit log, giới hạn dữ liệu trả về và không expose thông tin thanh toán chi tiết nếu không thật sự cần.
-
-
-
-5\. \*\*Quản lý hệ thống:\*\*
+4\. \*\*Quản lý hệ thống:\*\*
 
 &#x20;  - `GET /health` (Endpoint kiểm tra trạng thái hoạt động của backend)
 
@@ -64,7 +44,7 @@ Ngoài ra, tài liệu cũng dự phòng thêm một số nhóm tính năng khá
 
 \- \*\*Guest/Profile:\*\* Lấy và cập nhật thông tin khách.
 
-\- \*\*Cashiering/Folio:\*\* Đã được đưa vào nhóm endpoint tối thiểu, nhưng vẫn cần xác nhận phạm vi dữ liệu chi tiết trong giai đoạn khảo sát vì đây là nhóm dữ liệu nhạy cảm.
+\- \*\*Cashiering/Folio:\*\* Lấy folio cơ bản hoặc kiểm tra thanh toán (nhóm này ưu tiên kiểm soát kỹ vì là dữ liệu nhạy cảm).
 
 
 

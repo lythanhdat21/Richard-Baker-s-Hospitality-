@@ -1,0 +1,143 @@
+<svg width="1280" height="600" viewBox="0 0 1280 600" xmlns="http://www.w3.org/2000/svg" font-family="'Segoe UI', Arial, sans-serif">
+
+  <!-- Background -->
+  <rect width="1280" height="600" fill="white"/>
+
+  <!-- ══════════ TITLE ══════════ -->
+  <text x="640" y="42" text-anchor="middle" font-size="28" font-weight="bold" fill="#1a2e4a">Hospitality Integration Gateway</text>
+  <text x="640" y="72" text-anchor="middle" font-size="20" font-weight="bold" fill="#1a2e4a">MQTT (RCU) ↔ Oracle OPERA Cloud</text>
+
+  <!-- ══════════ LEFT CLOUD: Legrand RCU System ══════════ -->
+  <g transform="translate(5, 110)">
+    <path d="M 132,10 C 155,10 175,28 178,52 C 188,45 200,42 213,46 C 232,52 244,70 240,90 C 255,94 265,108 263,124 C 261,142 244,155 226,153 L 44,153 C 26,153 12,140 10,122 C 8,104 20,90 36,88 C 32,70 42,52 60,46 C 72,42 84,46 93,53 C 96,29 112,10 132,10 Z"
+          fill="#dce9f8" stroke="#4a7fc1" stroke-width="2.5"/>
+
+    <rect x="50" y="30" width="167" height="32" rx="6" fill="#3d6da8"/>
+    <text x="133" y="51" text-anchor="middle" font-size="13" font-weight="bold" fill="white">Legrand RCU System</text>
+
+    <!-- RCU Server box -->
+    <rect x="16" y="60" width="100" height="62" rx="7" fill="white" stroke="#4a7fc1" stroke-width="1.5"/>
+    <text x="66" y="87" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a2e4a">RCU</text>
+    <text x="66" y="106" text-anchor="middle" font-size="12" fill="#1a2e4a">Server</text>
+
+    <!-- RCU Units box -->
+    <rect x="150" y="60" width="100" height="62" rx="7" fill="white" stroke="#4a7fc1" stroke-width="1.5"/>
+    <text x="200" y="87" text-anchor="middle" font-size="13" font-weight="bold" fill="#1a2e4a">RCU</text>
+    <text x="200" y="106" text-anchor="middle" font-size="12" fill="#1a2e4a">Units</text>
+  </g>
+
+  <!-- MQTT arrow 1 -->
+  <line x1="274" y1="218" x2="326" y2="218" stroke="#e8a020" stroke-width="3"/>
+  <polygon points="321,212 333,218 321,224" fill="#e8a020"/>
+  <text x="272" y="210" font-size="12" font-style="italic" font-weight="bold" fill="#444">MQTT</text>
+
+  <!-- MQTT arrow 2 -->
+  <line x1="274" y1="254" x2="326" y2="254" stroke="#e8a020" stroke-width="3"/>
+  <polygon points="321,248 333,254 321,260" fill="#e8a020"/>
+  <text x="272" y="246" font-size="12" font-style="italic" font-weight="bold" fill="#444">MQTT</text>
+
+  <!-- ══════════ CENTER: Backend Gateway Box ══════════ -->
+  <rect x="336" y="94" width="616" height="458" rx="18" fill="#dce9f8" stroke="#8ab4d8" stroke-width="2"/>
+
+  <text x="644" y="130" text-anchor="middle" font-size="15" font-weight="bold" fill="#1a2e4a">Backend cầu nối nội bộ</text>
+
+  <!-- ── LEFT sub-box: Python FastAPI (dark red) ── -->
+  <rect x="356" y="144" width="272" height="284" rx="12" fill="#7d1616"/>
+
+  <!-- aiomqtt circle -->
+  <circle cx="404" cy="226" r="33" fill="#9e1c1c"/>
+  <path d="M 388,231 Q 404,214 420,231" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M 394,231 Q 404,220 414,231" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="404" cy="231" r="3.5" fill="white"/>
+  <text x="404" y="288" text-anchor="middle" font-size="11" fill="white">MQTT Sub</text>
+
+  <!-- Mapper circle -->
+  <circle cx="492" cy="226" r="33" fill="#9e1c1c"/>
+  <line x1="478" y1="222" x2="506" y2="222" stroke="white" stroke-width="2.5"/>
+  <polygon points="503,217 511,222 503,227" fill="white"/>
+  <line x1="506" y1="232" x2="478" y2="232" stroke="white" stroke-width="2"/>
+  <polygon points="481,227 473,232 481,237" fill="white"/>
+  <!-- <text x="492" y="272" text-anchor="middle" font-size="11" font-weight="bold" fill="white">Mapper</text> -->
+  <text x="492" y="288" text-anchor="middle" font-size="11" fill="white">Transform</text>
+
+  <!-- httpx circle -->
+  <circle cx="580" cy="226" r="33" fill="#9e1c1c"/>
+  <circle cx="580" cy="226" r="16" fill="none" stroke="white" stroke-width="2"/>
+  <line x1="580" y1="210" x2="580" y2="242" stroke="white" stroke-width="1.5"/>
+  <path d="M 564,226 Q 580,218 596,226" fill="none" stroke="white" stroke-width="1.5"/>
+  <text x="580" y="288" text-anchor="middle" font-size="11" fill="white">OPERA Client</text>
+
+  <text x="492" y="330" text-anchor="middle" font-size="11" fill="#ffaa88">retry • timeout • structured log</text>
+  <text x="492" y="350" text-anchor="middle" font-size="11" fill="#ffccaa">OAuth token tự quản lý</text>
+  <text x="492" y="368" text-anchor="middle" font-size="11" fill="#ffccaa">X-Internal-API-Key</text>
+
+  <!-- ── RIGHT sub-box: Mosquitto MQTT Broker ── -->
+  <rect x="648" y="144" width="274" height="284" rx="12" fill="white" stroke="#4a7fc1" stroke-width="1.5"/>
+
+  <!-- Mosquitto dark logo box -->
+  <rect x="682" y="160" width="206" height="132" rx="10" fill="#1a3558"/>
+  <!-- Big M -->
+  <text x="785" y="255" text-anchor="middle" font-size="76" font-weight="bold" fill="white" font-family="Georgia, serif">M</text>
+  <!-- Decorative arcs (Mosquitto style) -->
+  <path d="M 689,183 Q 703,167 718,180" fill="none" stroke="#e8a020" stroke-width="3" stroke-linecap="round"/>
+  <path d="M 694,196 Q 703,183 714,193" fill="none" stroke="#e8a020" stroke-width="2.5" stroke-linecap="round"/>
+
+  <text x="785" y="324" text-anchor="middle" font-size="15" font-weight="bold" fill="#1a2e4a">Mosquitto</text>
+  <text x="785" y="344" text-anchor="middle" font-size="13" fill="#1a2e4a">MQTT Broker</text>
+  <text x="785" y="366" text-anchor="middle" font-size="11" fill="#555">port 1883 / TLS 8883</text>
+  <text x="785" y="384" text-anchor="middle" font-size="11" fill="#555">Internal Bridge</text>
+  <text x="785" y="402" text-anchor="middle" font-size="11" fill="#555">QoS 1 / Persistent Session</text>
+
+  <!-- Hardware label (like "Raspberry Pi 2" in original) -->
+  <text x="644" y="450" text-anchor="middle" font-size="14" font-style="italic" font-weight="bold" fill="#1a2e4a">Linux Server / Docker Container</text>
+
+  <!-- Bottom blue bar -->
+  <rect x="348" y="466" width="592" height="38" rx="10" fill="#3d6da8"/>
+  <text x="644" y="490" text-anchor="middle" font-size="13" fill="white">MQTT Listener  •  Data Mapper  •  OPERA Cloud Client</text>
+
+  <!-- Bottom icons row -->
+  <!-- Antenna icon -->
+  <line x1="384" y1="530" x2="384" y2="515" stroke="#555" stroke-width="2"/>
+  <path d="M 375,523 Q 384,514 393,523" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M 371,528 Q 384,516 397,528" fill="none" stroke="#555" stroke-width="1.5" stroke-linecap="round"/>
+  <circle cx="384" cy="532" r="2.5" fill="#555"/>
+  <text x="405" y="527" font-size="12" fill="#555">Remote Monitoring</text>
+
+  <line x1="522" y1="524" x2="546" y2="524" stroke="#555" stroke-width="1.5"/>
+  <polygon points="543,520 551,524 543,528" fill="#555"/>
+
+  <!-- Gear icon -->
+  <circle cx="566" cy="524" r="11" fill="none" stroke="#555" stroke-width="2"/>
+  <circle cx="566" cy="524" r="4" fill="#555"/>
+  <line x1="566" y1="509" x2="566" y2="513" stroke="#555" stroke-width="2.5"/>
+  <line x1="566" y1="535" x2="566" y2="539" stroke="#555" stroke-width="2.5"/>
+  <line x1="551" y1="524" x2="555" y2="524" stroke="#555" stroke-width="2.5"/>
+  <line x1="577" y1="524" x2="581" y2="524" stroke="#555" stroke-width="2.5"/>
+  <text x="584" y="528" font-size="12" fill="#555">System Integration</text>
+
+  <!-- ══════════ HTTPS ARROW: Gateway → Oracle ══════════ -->
+  <line x1="954" y1="252" x2="1010" y2="252" stroke="#4a7fc1" stroke-width="3"/>
+  <polygon points="1006,246 1018,252 1006,258" fill="#4a7fc1"/>
+  <text x="950" y="240" font-size="12" font-style="italic" font-weight="bold" fill="#444">HTTPS /</text>
+  <text x="950" y="270" font-size="12" font-style="italic" font-weight="bold" fill="#444">OAuth 2.0</text>
+
+  <!-- ══════════ RIGHT CLOUD: Oracle OPERA Cloud ══════════ -->
+  <g transform="translate(1012, 110)">
+    <path d="M 132,10 C 155,10 175,28 178,52 C 188,45 200,42 213,46 C 232,52 244,70 240,90 C 255,94 265,108 263,124 C 261,142 244,155 226,153 L 44,153 C 26,153 12,140 10,122 C 8,104 20,90 36,88 C 32,70 42,52 60,46 C 72,42 84,46 93,53 C 96,29 112,10 132,10 Z"
+          fill="#fff0e8" stroke="#c06030" stroke-width="2.5"/>
+
+    <!-- Oracle red banner -->
+    <rect x="50" y="30" width="167" height="32" rx="6" fill="#c0392b"/>
+    <text x="133" y="51" text-anchor="middle" font-size="14" font-weight="bold" fill="white">ORACLE</text>
+
+    <text x="133" y="88" text-anchor="middle" font-size="12" font-weight="bold" fill="#1a2e4a">OPERA Cloud</text>
+
+    <!-- OHIP box -->
+    <rect x="28" y="98" width="212" height="46" rx="7" fill="white" stroke="#c06030" stroke-width="1.5"/>
+    <text x="134" y="117" text-anchor="middle" font-size="11" font-weight="bold" fill="#1a2e4a">OPERA Cloud Foundation</text>
+    <text x="134" y="135" text-anchor="middle" font-size="11" fill="#555">~20 API Endpoints</text>
+
+    <text x="133" y="173" text-anchor="middle" font-size="12" font-style="italic" fill="#c06030">Oracle Hospitality</text>
+  </g>
+
+</svg>
