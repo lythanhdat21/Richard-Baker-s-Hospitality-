@@ -24,5 +24,7 @@ class Settings(BaseSettings):
     mqtt_port: int = 1883
     mqtt_client_id: str = "opera-bridge"
 
+    room_status_sync_interval_seconds: int = 300
+
 
 settings = Settings()

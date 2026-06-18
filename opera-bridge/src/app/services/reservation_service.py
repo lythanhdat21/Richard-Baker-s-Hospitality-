@@ -6,6 +6,7 @@ from src.app.schemas.internal.reservation import (
 )
 from src.app.core.config import settings
 from src.app.core.logging import get_logger
+from src.app.db.session import record_audit_event
 from src.app.utils.error_normalizer import normalize_opera_error
 
 logger = get_logger(__name__)
@@ -33,11 +34,15 @@ async def get_reservation(reservation_id: str, trace_id: str) -> ReservationDeta
 
 async def check_in(reservation_id: str, trace_id: str) -> CheckInResponse:
     logger.info("check_in_start", reservation_id=reservation_id, trace_id=trace_id)
-    data = await opera.post(
-        f"/rsv/v1/hotels/{HOTEL}/reservations/{reservation_id}/checkIn",
-        trace_id,
-        json={},
-    )
+    try:
+        data = await opera.post(
+            f"/fof/v1/hotels/{HOTEL}/reservations/{reservation_id}/checkIns",
+            trace_id,
+            json={"reservation": {"ignoreWarnings": True}},
+        )
+    except Exception:
+        record_audit_event(trace_id, "internal_api", "check_in", "reservation", reservation_id, "failed")
+        raise
     room_number = (
         data.get("reservation", {})
         .get("roomStay", {})
@@ -45,15 +50,21 @@ async def check_in(reservation_id: str, trace_id: str) -> CheckInResponse:
         .get("roomId")
     )
     logger.info("check_in_done", reservation_id=reservation_id, trace_id=trace_id)
+    record_audit_event(trace_id, "internal_api", "check_in", "reservation", reservation_id, "success")
     return CheckInResponse(reservation_id=reservation_id, status="CHECKED_IN", room_number=room_number)
 
 
 async def check_out(reservation_id: str, trace_id: str) -> CheckOutResponse:
     logger.info("check_out_start", reservation_id=reservation_id, trace_id=trace_id)
-    await opera.post(
-        f"/rsv/v1/hotels/{HOTEL}/reservations/{reservation_id}/checkOut",
-        trace_id,
-        json={},
-    )
+    try:
+        await opera.post(
+            f"/csh/v1/hotels/{HOTEL}/reservations/{reservation_id}/checkOuts",
+            trace_id,
+            json={"reservation": {}},
+        )
+    except Exception:
+        record_audit_event(trace_id, "internal_api", "check_out", "reservation", reservation_id, "failed")
+        raise
     logger.info("check_out_done", reservation_id=reservation_id, trace_id=trace_id)
+    record_audit_event(trace_id, "internal_api", "check_out", "reservation", reservation_id, "success")
     return CheckOutResponse(reservation_id=reservation_id, status="CHECKED_OUT")

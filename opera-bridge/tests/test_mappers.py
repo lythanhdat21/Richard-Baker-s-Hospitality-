@@ -42,18 +42,21 @@ def test_to_internal_summary():
 
 def test_to_internal_room_status():
     opera_room = {
-        "room": {
-            "roomId": "1208",
-            "occupancyStatus": "OCCUPIED",
-            "housekeeping": {"status": "CLEAN"},
-            "roomType": "DLX",
-            "floor": "12",
-        }
+        "roomId": "1208",
+        "roomType": {"roomType": "DLX"},
+        "floor": "12",
+        "housekeeping": {
+            "housekeepingRoomStatus": {
+                "housekeepingRoomStatus": "Clean",
+                "frontOfficeStatus": "Occupied",
+            }
+        },
     }
     status = room_mapper.to_internal_room_status(opera_room)
     assert status.room_number == "1208"
-    assert status.occupancy_status == "OCCUPIED"
-    assert status.housekeeping_status == "CLEAN"
+    assert status.occupancy_status == "Occupied"
+    assert status.housekeeping_status == "Clean"
+    assert status.room_type == "DLX"
     assert status.floor == "12"
 
 

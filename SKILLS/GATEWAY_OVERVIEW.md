@@ -220,11 +220,17 @@ Mỗi message chứa **toàn bộ trạng thái khách sạn** — tập hợp h
 
 ### 5.3 Mapping roomStatus → OPERA Cloud
 
-| `roomStatus` (Legrand) | Housekeeping Status (OPERA Cloud) |
-|------------------------|-----------------------------------|
-| `2` | `CLEAN` |
-| `4` | `DIRTY` |
-| Các giá trị khác | Cần xác nhận thêm với đối tác Legrand |
+| `roomStatus` (Legrand) | Ý nghĩa | OPERA Cloud Housekeeping Status |
+|------------------------|---------|----------------------------------|
+| `1` | OCCUPIED | _Không map_ — đây là occupancy, không phải housekeeping. Occupancy do luồng check-in/check-out điều khiển, RCU không đẩy giá trị này lên OPERA. |
+| `2` | CLEAN | `Clean` |
+| `3` | INSPECT | `Inspected` |
+| `4` | DIRTY | `Dirty` |
+| `5` | OUT OF ORDER | `OutOfOrder` |
+| `6` | OUT OF SERVICE | `OutOfService` |
+
+> Enum housekeeping status thật của OPERA Cloud (API `PUT /hsk/v1/hotels/{hotelId}/rooms/status`)
+> là PascalCase: `Clean`, `Dirty`, `Pickup`, `Inspected`, `OutOfOrder`, `OutOfService`.
 
 ### 5.4 Đặc điểm publish của Legrand RCU
 

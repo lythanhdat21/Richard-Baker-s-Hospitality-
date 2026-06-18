@@ -7,6 +7,7 @@ from src.app.core.logging import configure_logging, get_logger
 from src.app.middlewares.request_logging import RequestLoggingMiddleware
 from src.app.api.routes import health, reservations, rooms, guests
 from src.app.mqtt.subscriber import run_subscriber
+from src.app.jobs.room_status_sync import run_periodic as run_room_status_sync_periodic
 
 configure_logging()
 logger = get_logger(__name__)
@@ -16,13 +17,17 @@ logger = get_logger(__name__)
 async def lifespan(app: FastAPI):
     mqtt_task = asyncio.create_task(run_subscriber())
     logger.info("mqtt_subscriber_started")
+    sync_task = asyncio.create_task(run_room_status_sync_periodic())
+    logger.info("room_status_sync_periodic_started")
     yield
-    mqtt_task.cancel()
-    try:
-        await mqtt_task
-    except asyncio.CancelledError:
-        pass
+    for task in (mqtt_task, sync_task):
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
     logger.info("mqtt_subscriber_stopped")
+    logger.info("room_status_sync_periodic_stopped")
 
 
 app = FastAPI(
