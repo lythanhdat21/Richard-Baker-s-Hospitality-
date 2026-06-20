@@ -10,8 +10,8 @@
 
 **Backend:**
 ```bash
-wls
-cd BACKEND/opera-bridge
+wsl
+cd opera-bridge
 #cp .env.example .env
 docker compose up --build
 ```
