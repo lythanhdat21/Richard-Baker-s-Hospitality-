@@ -1,16 +1,14 @@
-"""initial schema
+"""initial schema: users, room_types, rooms, reservations, stays, room_service_logs
 
 Revision ID: 001
 Revises:
-Create Date: 2026-06-11
+Create Date: 2026-06-19
 
 """
 from typing import Sequence, Union
-from alembic import op
+
 import sqlalchemy as sa
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy import TIMESTAMP
-TIMESTAMPTZ = TIMESTAMP(timezone=True)
+from alembic import op
 
 revision: str = "001"
 down_revision: Union[str, None] = None
@@ -18,141 +16,149 @@ branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
 
+ROOM_TYPES_SEED = [
+    {"id": 1, "code": "PK", "name": "Premium King", "max_guests": 2, "description": None},
+    {"id": 2, "code": "DT", "name": "Deluxe Twin", "max_guests": 2, "description": None},
+    {"id": 3, "code": "JSK", "name": "Junior Suite King", "max_guests": 4, "description": None},
+]
+
+ROOMS_SEED = [
+    {"room_number": "11", "room_type_id": 1, "floor": 1},
+    {"room_number": "15", "room_type_id": 1, "floor": 1},
+    {"room_number": "17", "room_type_id": 1, "floor": 1},
+    {"room_number": "202", "room_type_id": 2, "floor": 2},
+    {"room_number": "205", "room_type_id": 2, "floor": 2},
+    {"room_number": "209", "room_type_id": 2, "floor": 2},
+    {"room_number": "403", "room_type_id": 3, "floor": 4},
+    {"room_number": "408", "room_type_id": 3, "floor": 4},
+    {"room_number": "409", "room_type_id": 3, "floor": 4},
+]
+
+
 def upgrade() -> None:
-    op.execute("CREATE EXTENSION IF NOT EXISTS pgcrypto")
+    op.create_table(
+        "users",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("username", sa.String(255), nullable=False),
+        sa.Column("gender", sa.String(10), nullable=False),
+        sa.Column("phone_number", sa.String(32), nullable=False),
+        sa.Column("email", sa.String(255), nullable=False),
+        sa.Column("password_hash", sa.String(255), nullable=False),
+        sa.Column("avatar", sa.String(255), nullable=True),
+        sa.Column("role", sa.String(20), nullable=False),
+        sa.Column("created_at", sa.DateTime(timezone=True), server_default=sa.func.now(), nullable=False),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
+        sa.UniqueConstraint("phone_number", name="uq_users_phone_number"),
+        sa.UniqueConstraint("email", name="uq_users_email"),
+    )
 
     op.create_table(
-        "properties",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("property_code", sa.String(64), nullable=False),
-        sa.Column("hotel_id", sa.String(64), nullable=False),
-        sa.Column("name", sa.String(255), nullable=False),
-        sa.Column("opera_base_url", sa.Text, nullable=False),
-        sa.Column("is_active", sa.Boolean, nullable=False, server_default="true"),
-        sa.Column("created_at", TIMESTAMPTZ, nullable=False, server_default=sa.text("now()")),
-        sa.Column("updated_at", TIMESTAMPTZ, nullable=False, server_default=sa.text("now()")),
-        sa.UniqueConstraint("property_code", name="uq_properties_property_code"),
+        "room_types",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("code", sa.String(20), nullable=False),
+        sa.Column("name", sa.String(100), nullable=False),
+        sa.Column("max_guests", sa.Integer(), nullable=False),
+        sa.Column("description", sa.Text(), nullable=True),
+        sa.UniqueConstraint("code", name="uq_room_types_code"),
     )
-    op.create_index("idx_properties_hotel_id", "properties", ["hotel_id"])
-    op.create_index("idx_properties_is_active", "properties", ["is_active"])
 
     op.create_table(
-        "integration_mappings",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("property_id", UUID(as_uuid=True), sa.ForeignKey("properties.id"), nullable=False),
-        sa.Column("entity_type", sa.String(64), nullable=False),
-        sa.Column("internal_id", sa.String(128), nullable=False),
-        sa.Column("opera_id", sa.String(128), nullable=True),
-        sa.Column("opera_confirmation_number", sa.String(128), nullable=True),
-        sa.Column("created_at", TIMESTAMPTZ, nullable=False, server_default=sa.text("now()")),
-        sa.Column("updated_at", TIMESTAMPTZ, nullable=False, server_default=sa.text("now()")),
-        sa.UniqueConstraint("property_id", "entity_type", "internal_id", name="uq_integration_mappings_internal"),
+        "rooms",
+        sa.Column("room_id", sa.Integer(), primary_key=True),
+        sa.Column("room_number", sa.String(10), nullable=False),
+        sa.Column("room_type_id", sa.Integer(), sa.ForeignKey("room_types.id"), nullable=False),
+        sa.Column("floor", sa.Integer(), nullable=False),
+        sa.Column("status", sa.String(32), nullable=False, server_default="Vacant"),
+        sa.Column("do_not_disturb", sa.Boolean(), nullable=False, server_default=sa.false()),
+        sa.Column("make_up_room", sa.Boolean(), nullable=False, server_default=sa.false()),
+        sa.Column(
+            "updated_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
+        sa.UniqueConstraint("room_number", name="uq_rooms_room_number"),
     )
-    op.create_index("idx_integration_mappings_opera_id", "integration_mappings", ["property_id", "entity_type", "opera_id"])
-    op.create_index("idx_integration_mappings_confirmation", "integration_mappings", ["opera_confirmation_number"])
 
     op.create_table(
-        "sync_states",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("property_id", UUID(as_uuid=True), sa.ForeignKey("properties.id"), nullable=False),
-        sa.Column("sync_type", sa.String(64), nullable=False),
-        sa.Column("last_synced_at", TIMESTAMPTZ, nullable=True),
-        sa.Column("last_success_at", TIMESTAMPTZ, nullable=True),
-        sa.Column("last_error_at", TIMESTAMPTZ, nullable=True),
-        sa.Column("last_error_code", sa.String(128), nullable=True),
-        sa.Column("last_error_message", sa.Text, nullable=True),
-        sa.Column("created_at", TIMESTAMPTZ, nullable=False, server_default=sa.text("now()")),
-        sa.Column("updated_at", TIMESTAMPTZ, nullable=False, server_default=sa.text("now()")),
-        sa.UniqueConstraint("property_id", "sync_type", name="uq_sync_states_property_sync"),
+        "reservations",
+        sa.Column("reservation_id", sa.Integer(), primary_key=True),
+        sa.Column("username", sa.String(255), nullable=False),
+        sa.Column("gender", sa.String(10), nullable=False),
+        sa.Column("phone_number", sa.String(32), nullable=False),
+        sa.Column("number_of_guests", sa.Integer(), nullable=False),
+        sa.Column("expected_departure_date", sa.Date(), nullable=False),
+        sa.Column("status", sa.String(32), nullable=False, server_default="BOOKED"),
     )
-    op.create_index("idx_sync_states_last_success_at", "sync_states", ["last_success_at"])
-    op.create_index("idx_sync_states_last_error_at", "sync_states", ["last_error_at"])
 
     op.create_table(
-        "api_request_logs",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("trace_id", sa.String(128), nullable=False),
-        sa.Column("property_id", UUID(as_uuid=True), sa.ForeignKey("properties.id"), nullable=True),
-        sa.Column("internal_endpoint", sa.Text, nullable=False),
-        sa.Column("opera_endpoint", sa.Text, nullable=True),
-        sa.Column("http_method", sa.String(16), nullable=False),
-        sa.Column("status_code", sa.Integer, nullable=True),
-        sa.Column("success", sa.Boolean, nullable=False),
-        sa.Column("error_code", sa.String(128), nullable=True),
-        sa.Column("duration_ms", sa.Integer, nullable=True),
-        sa.Column("created_at", TIMESTAMPTZ, nullable=False, server_default=sa.text("now()")),
+        "stays",
+        sa.Column("stay_id", sa.Integer(), primary_key=True),
+        sa.Column(
+            "reservation_id",
+            sa.Integer(),
+            sa.ForeignKey("reservations.reservation_id"),
+            nullable=False,
+        ),
+        sa.Column("room_id", sa.Integer(), sa.ForeignKey("rooms.room_id"), nullable=False),
+        sa.Column("username", sa.String(255), nullable=False),
+        sa.Column("gender", sa.String(10), nullable=False),
+        sa.Column("phone_number", sa.String(32), nullable=False),
+        sa.Column("number_of_guests", sa.Integer(), nullable=False),
+        sa.Column("expected_arrival_date", sa.Date(), nullable=False),
+        sa.Column("expected_departure_date", sa.Date(), nullable=False),
+        sa.Column("checked_in_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("checked_in_by", sa.Integer(), sa.ForeignKey("users.id"), nullable=True),
+        sa.Column("checked_out_at", sa.DateTime(timezone=True), nullable=True),
+        sa.Column("checked_out_by", sa.Integer(), sa.ForeignKey("users.id"), nullable=True),
+        sa.Column("status", sa.String(32), nullable=False, server_default="CHECKED_IN"),
     )
-    op.create_index("idx_api_request_logs_trace_id", "api_request_logs", ["trace_id"])
-    op.create_index("idx_api_request_logs_property_created", "api_request_logs", ["property_id", "created_at"])
-    op.create_index("idx_api_request_logs_success_created", "api_request_logs", ["success", "created_at"])
-    op.create_index("idx_api_request_logs_error_code", "api_request_logs", ["error_code"])
 
     op.create_table(
-        "retry_queue",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("property_id", UUID(as_uuid=True), sa.ForeignKey("properties.id"), nullable=False),
-        sa.Column("operation_type", sa.String(64), nullable=False),
-        sa.Column("payload", JSONB, nullable=False),
-        sa.Column("status", sa.String(32), nullable=False, server_default="pending"),
-        sa.Column("attempt_count", sa.Integer, nullable=False, server_default="0"),
-        sa.Column("max_attempts", sa.Integer, nullable=False, server_default="3"),
-        sa.Column("next_retry_at", TIMESTAMPTZ, nullable=True),
-        sa.Column("last_error_code", sa.String(128), nullable=True),
-        sa.Column("last_error_message", sa.Text, nullable=True),
-        sa.Column("created_at", TIMESTAMPTZ, nullable=False, server_default=sa.text("now()")),
-        sa.Column("updated_at", TIMESTAMPTZ, nullable=False, server_default=sa.text("now()")),
+        "room_service_logs",
+        sa.Column("id", sa.Integer(), primary_key=True),
+        sa.Column("stay_id", sa.Integer(), sa.ForeignKey("stays.stay_id"), nullable=True),
+        sa.Column("room_id", sa.Integer(), sa.ForeignKey("rooms.room_id"), nullable=False),
+        sa.Column("service", sa.String(32), nullable=False),
+        sa.Column("action", sa.String(32), nullable=False),
+        sa.Column("requested_by", sa.Integer(), sa.ForeignKey("users.id"), nullable=False),
+        sa.Column("requested_role", sa.String(20), nullable=False),
+        sa.Column(
+            "requested_at",
+            sa.DateTime(timezone=True),
+            server_default=sa.func.now(),
+            nullable=False,
+        ),
     )
-    op.create_index("idx_retry_queue_status_next_retry", "retry_queue", ["status", "next_retry_at"])
-    op.create_index("idx_retry_queue_property_operation", "retry_queue", ["property_id", "operation_type"])
-    op.create_index("idx_retry_queue_created_at", "retry_queue", ["created_at"])
 
-    op.create_table(
-        "audit_events",
-        sa.Column("id", UUID(as_uuid=True), primary_key=True, server_default=sa.text("gen_random_uuid()")),
-        sa.Column("trace_id", sa.String(128), nullable=False),
-        sa.Column("property_id", UUID(as_uuid=True), sa.ForeignKey("properties.id"), nullable=False),
-        sa.Column("actor_type", sa.String(32), nullable=False),
-        sa.Column("actor_id", sa.String(128), nullable=True),
-        sa.Column("action", sa.String(128), nullable=False),
-        sa.Column("entity_type", sa.String(64), nullable=False),
-        sa.Column("entity_id", sa.String(128), nullable=False),
-        sa.Column("result", sa.String(32), nullable=False),
-        sa.Column("metadata", JSONB, nullable=True),
-        sa.Column("created_at", TIMESTAMPTZ, nullable=False, server_default=sa.text("now()")),
+    room_types_table = sa.table(
+        "room_types",
+        sa.column("id", sa.Integer),
+        sa.column("code", sa.String),
+        sa.column("name", sa.String),
+        sa.column("max_guests", sa.Integer),
+        sa.column("description", sa.Text),
     )
-    op.create_index("idx_audit_events_trace_id", "audit_events", ["trace_id"])
-    op.create_index("idx_audit_events_property_created", "audit_events", ["property_id", "created_at"])
-    op.create_index("idx_audit_events_entity", "audit_events", ["entity_type", "entity_id"])
-    op.create_index("idx_audit_events_action_created", "audit_events", ["action", "created_at"])
+    op.bulk_insert(room_types_table, ROOM_TYPES_SEED)
 
-    op.execute("""
-        CREATE OR REPLACE FUNCTION set_updated_at()
-        RETURNS TRIGGER AS $$
-        BEGIN
-            NEW.updated_at = now();
-            RETURN NEW;
-        END;
-        $$ LANGUAGE plpgsql;
-
-        CREATE TRIGGER trg_properties_updated_at
-        BEFORE UPDATE ON properties FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
-        CREATE TRIGGER trg_integration_mappings_updated_at
-        BEFORE UPDATE ON integration_mappings FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
-        CREATE TRIGGER trg_sync_states_updated_at
-        BEFORE UPDATE ON sync_states FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-
-        CREATE TRIGGER trg_retry_queue_updated_at
-        BEFORE UPDATE ON retry_queue FOR EACH ROW EXECUTE FUNCTION set_updated_at();
-    """)
+    rooms_table = sa.table(
+        "rooms",
+        sa.column("room_number", sa.String),
+        sa.column("room_type_id", sa.Integer),
+        sa.column("floor", sa.Integer),
+    )
+    op.bulk_insert(rooms_table, ROOMS_SEED)
 
 
 def downgrade() -> None:
-    op.drop_table("audit_events")
-    op.drop_table("retry_queue")
-    op.drop_table("api_request_logs")
-    op.drop_table("sync_states")
-    op.drop_table("integration_mappings")
-    op.drop_table("properties")
-    op.execute("DROP FUNCTION IF EXISTS set_updated_at CASCADE")
+    op.drop_table("room_service_logs")
+    op.drop_table("stays")
+    op.drop_table("reservations")
+    op.drop_table("rooms")
+    op.drop_table("room_types")
+    op.drop_table("users")

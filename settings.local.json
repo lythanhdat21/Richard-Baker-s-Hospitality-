@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-ChildItem -Recurse \"d:\\\\J\\\\A. Phi\\\\hospitality-api-docs\\\\opera-bridge\" | Where-Object { -not $_.PSIsContainer } | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace\\(\"d:\\\\J\\\\A. Phi\\\\hospitality-api-docs\\\\opera-bridge\\\\\", \"\"\\) } | Sort-Object)",
+      "Bash(docker compose *)",
+      "PowerShell(Get-ChildItem -Recurse \"d:\\\\J\\\\A. Phi\\\\hospitality-api-docs\\\\opera-bridge\\\\src\\\\app\\\\mqtt\" | Select-Object -ExpandProperty FullName | ForEach-Object { $_.Replace\\(\"d:\\\\J\\\\A. Phi\\\\hospitality-api-docs\\\\opera-bridge\\\\\", \"\"\\) })"
+    ]
+  }
+}

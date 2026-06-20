@@ -2,29 +2,22 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     app_env: str = "development"
-    app_host: str = "0.0.0.0"
-    app_port: int = 8000
-    log_level: str = "INFO"
 
-    internal_api_key: str = "change-me-in-production"
-    cashiering_allowed_roles: str = "admin,cashiering,front-desk-manager"
+    database_url: str = "postgresql+psycopg2://opera:opera@db:5432/opera_bridge"
 
-    database_url: str = "postgresql://opera_user:opera_pass@localhost:5432/opera_bridge"
+    jwt_secret: str = "change-me-to-a-long-random-string"
+    jwt_algorithm: str = "HS256"
+    jwt_expire_minutes: int = 1440
 
-    opera_client_id: str = ""
-    opera_client_secret: str = ""
-    opera_base_url: str = ""
-    opera_hotel_id: str = ""
-    opera_token_ttl: int = 3300
+    upload_dir: str = "uploads"
 
-    mqtt_host: str = "mqtt"
-    mqtt_port: int = 1883
-    mqtt_client_id: str = "opera-bridge"
-
-    room_status_sync_interval_seconds: int = 300
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
 
 
 settings = Settings()

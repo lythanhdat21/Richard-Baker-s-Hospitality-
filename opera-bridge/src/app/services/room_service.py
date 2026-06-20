@@ -1,39 +1,83 @@
-from src.app.clients import opera_cloud_client as opera
-from src.app.mappers import room_mapper
-from src.app.schemas.internal.room import RoomStatus, RoomStatusUpdateRequest
-from src.app.core.config import settings
-from src.app.db.session import record_audit_event
-from src.app.utils.error_normalizer import normalize_opera_error
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
-HOTEL = settings.opera_hotel_id
+from app.core.timeutil import now_vn
+from app.db.models import Room, RoomServiceLog, Stay, User
 
 
-async def get_room_status(room_number: str, trace_id: str) -> RoomStatus:
-    data = await opera.get(
-        f"/hsk/v1/hotels/{HOTEL}/housekeepingOverview",
-        trace_id,
-        params={"roomIdText": room_number, "limit": 1},
+class RoomNotFoundError(Exception):
+    pass
+
+
+def get_room_by_number(db: Session, room_number: str) -> Room:
+    room = db.scalar(select(Room).where(Room.room_number == room_number))
+    if room is None:
+        raise RoomNotFoundError(f"Không tìm thấy phòng room_number={room_number}")
+    return room
+
+
+def _current_stay_id(db: Session, room_id: int) -> int | None:
+    stay = db.scalar(
+        select(Stay)
+        .where(Stay.room_id == room_id, Stay.status == "CHECKED_IN")
+        .order_by(Stay.stay_id.desc())
     )
-    rooms = data.get("housekeepingRoomInfo", {}).get("housekeepingRooms", {}).get("room", [])
-    if not rooms:
-        raise normalize_opera_error("ROOM_NOT_FOUND", f"Không tìm thấy phòng {room_number}.", trace_id)
-    return room_mapper.to_internal_room_status(rooms[0])
+    return stay.stay_id if stay else None
 
 
-async def update_room_status(
-    room_number: str, req: RoomStatusUpdateRequest, trace_id: str, record_audit: bool = True
-) -> RoomStatus:
-    """`record_audit=False` dùng cho luồng RCU đồng bộ hàng loạt (mqtt/handlers/room_handler.py) —
-    luồng đó đã có sync_state riêng (sync_type=rcu_room_status), ghi audit_event cho từng phòng
-    mỗi lần publish sẽ làm phình bảng audit_events vô nghĩa."""
-    payload = {"roomList": [{"roomId": room_number}], "housekeepingRoomStatus": req.housekeeping_status}
-    try:
-        await opera.put(f"/hsk/v1/hotels/{HOTEL}/rooms/status", trace_id, json=payload)
-    except Exception:
-        if record_audit:
-            record_audit_event(trace_id, "internal_api", "update_room_status", "room", room_number, "failed")
-        raise
-    result = await get_room_status(room_number, trace_id)
-    if record_audit:
-        record_audit_event(trace_id, "internal_api", "update_room_status", "room", room_number, "success")
-    return result
+def _log(
+    db: Session,
+    *,
+    room_id: int,
+    service: str,
+    action: str,
+    actor: User,
+) -> None:
+    log = RoomServiceLog(
+        stay_id=_current_stay_id(db, room_id),
+        room_id=room_id,
+        service=service,
+        action=action,
+        requested_by=actor.id,
+        requested_role=actor.role,
+    )
+    db.add(log)
+
+
+def set_dnd(db: Session, room_number: str, *, turn_on: bool, actor: User) -> Room:
+    room = get_room_by_number(db, room_number)
+    room.do_not_disturb = turn_on
+    room.updated_at = now_vn()
+    _log(
+        db,
+        room_id=room.room_id,
+        service="DO_NOT_DISTURB",
+        action="ON" if turn_on else "OFF",
+        actor=actor,
+    )
+    db.add(room)
+    db.commit()
+    db.refresh(room)
+    return room
+
+
+def request_make_up_room(db: Session, room_number: str, *, actor: User) -> Room:
+    room = get_room_by_number(db, room_number)
+    room.make_up_room = True
+    room.updated_at = now_vn()
+    _log(db, room_id=room.room_id, service="MAKE_UP_ROOM", action="REQUEST", actor=actor)
+    db.add(room)
+    db.commit()
+    db.refresh(room)
+    return room
+
+
+def complete_make_up_room(db: Session, room_number: str, *, actor: User) -> Room:
+    room = get_room_by_number(db, room_number)
+    room.make_up_room = False
+    room.updated_at = now_vn()
+    _log(db, room_id=room.room_id, service="MAKE_UP_ROOM", action="COMPLETE", actor=actor)
+    db.add(room)
+    db.commit()
+    db.refresh(room)
+    return room

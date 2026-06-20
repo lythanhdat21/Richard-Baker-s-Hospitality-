@@ -1,32 +1,74 @@
-from fastapi import Header, HTTPException, Security, status
-from fastapi.security.api_key import APIKeyHeader
-from src.app.core.config import settings
+from datetime import datetime, timedelta, timezone
 
-_api_key_header = APIKeyHeader(name="X-Internal-API-Key", auto_error=False)
+import jwt
+from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from passlib.context import CryptContext
+from sqlalchemy.orm import Session
+
+from app.core.config import settings
+from app.db.models import User
+from app.db.session import get_db
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+bearer_scheme = HTTPBearer(auto_error=False)
 
 
-async def require_internal_api_key(api_key: str | None = Security(_api_key_header)) -> str:
-    if not api_key or api_key != settings.internal_api_key:
+def hash_password(plain_password: str) -> str:
+    return pwd_context.hash(plain_password)
+
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    return pwd_context.verify(plain_password, hashed_password)
+
+
+def create_access_token(user_id: int, role: str) -> str:
+    expire = datetime.now(timezone.utc) + timedelta(minutes=settings.jwt_expire_minutes)
+    payload = {"sub": str(user_id), "role": role, "exp": expire}
+    return jwt.encode(payload, settings.jwt_secret, algorithm=settings.jwt_algorithm)
+
+
+def get_current_user(
+    credentials: HTTPAuthorizationCredentials | None = Depends(bearer_scheme),
+    db: Session = Depends(get_db),
+) -> User:
+    if credentials is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail={"success": False, "code": "AUTH_FAILED", "message": "Invalid or missing API key."},
+            detail={"message": "Thiếu access token", "status": "error"},
         )
-    return api_key
-
-
-async def require_cashiering_access(
-    api_key: str | None = Security(_api_key_header),
-    role: str | None = Header(None, alias="X-Internal-Role"),
-) -> str:
-    await require_internal_api_key(api_key)
-    allowed_roles = {item.strip().lower() for item in settings.cashiering_allowed_roles.split(",") if item.strip()}
-    if not role or role.strip().lower() not in allowed_roles:
+    try:
+        payload = jwt.decode(
+            credentials.credentials,
+            settings.jwt_secret,
+            algorithms=[settings.jwt_algorithm],
+        )
+        user_id = int(payload["sub"])
+    except (jwt.PyJWTError, KeyError, ValueError):
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail={
-                "success": False,
-                "code": "CASHIERING_ACCESS_DENIED",
-                "message": "Cashiering/Folio endpoints require an allowed internal role.",
-            },
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"message": "Access token không hợp lệ hoặc đã hết hạn", "status": "error"},
         )
-    return role
+
+    user = db.get(User, user_id)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail={"message": "Người dùng không tồn tại", "status": "error"},
+        )
+    return user
+
+
+def require_roles(*allowed_roles: str):
+    def dependency(current_user: User = Depends(get_current_user)) -> User:
+        if current_user.role not in allowed_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail={
+                    "message": f"Role '{current_user.role}' không có quyền thực hiện hành động này",
+                    "status": "error",
+                },
+            )
+        return current_user
+
+    return dependency

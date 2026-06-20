@@ -1,1 +1,0 @@
-Opera Cloud -> MQTT -> RCU 

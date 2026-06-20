@@ -1,0 +1,231 @@
+{
+  "info": {
+    "name": "Opera Bridge - Demo Project",
+    "description": "Test Register/Login + Check-in/Check-out (stays) + Do Not Disturb/Make-up-room (rooms) cho Demo Project (opera-bridge), theo DATABASE_&_API.md (room_number làm định danh phòng).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "base_url", "value": "http://localhost:8000" },
+    { "key": "token", "value": "" },
+    { "key": "customer_token", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/health"
+      }
+    },
+    {
+      "name": "1. Register - Receptionist",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/auth/register",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "username", "value": "Nguyen Van A", "type": "text" },
+            { "key": "gender", "value": "Male", "type": "text" },
+            { "key": "phone_number", "value": "0900000001", "type": "text" },
+            { "key": "email", "value": "receptionist@example.com", "type": "text" },
+            { "key": "password", "value": "123456", "type": "text" },
+            { "key": "role", "value": "RECEPTIONIST", "type": "text" },
+            { "key": "avatar", "type": "file", "src": [] }
+          ]
+        }
+      }
+    },
+    {
+      "name": "2. Register - Customer",
+      "request": {
+        "method": "POST",
+        "url": "{{base_url}}/api/auth/register",
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            { "key": "username", "value": "Tran Thi B", "type": "text" },
+            { "key": "gender", "value": "Female", "type": "text" },
+            { "key": "phone_number", "value": "0900000002", "type": "text" },
+            { "key": "email", "value": "customer@example.com", "type": "text" },
+            { "key": "password", "value": "123456", "type": "text" },
+            { "key": "role", "value": "CUSTOMER", "type": "text" },
+            { "key": "avatar", "type": "file", "src": [] }
+          ]
+        }
+      }
+    },
+    {
+      "name": "3. Login - Receptionist",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('save receptionist token', function () {",
+              "    var data = pm.response.json().data;",
+              "    pm.collectionVariables.set('token', data.access_token);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone_number\": \"0900000001\",\n  \"password\": \"123456\"\n}"
+        }
+      }
+    },
+    {
+      "name": "3b. Login - Customer",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('save customer token', function () {",
+              "    var data = pm.response.json().data;",
+              "    pm.collectionVariables.set('customer_token', data.access_token);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/api/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"phone_number\": \"0900000002\",\n  \"password\": \"123456\"\n}"
+        }
+      }
+    },
+    {
+      "name": "4. Check-in - Room 11",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{base_url}}/api/stays/check-in",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"room_number\": \"11\",\n  \"room_name\": \"Premium King\",\n  \"username\": \"Tony Lee\",\n  \"gender\": \"Male\",\n  \"phone_number\": \"0123456789\",\n  \"number_of_guests\": 2,\n  \"expected_arrival_date\": \"2026-06-25\",\n  \"expected_departure_date\": \"2026-06-30\"\n}"
+        }
+      }
+    },
+    {
+      "name": "4b. Check-in - Room 11 (Customer, kỳ vọng 403)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+        ],
+        "url": "{{base_url}}/api/stays/check-in",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"room_number\": \"11\",\n  \"room_name\": \"Premium King\",\n  \"username\": \"Tony Lee\",\n  \"gender\": \"Male\",\n  \"phone_number\": \"0123456789\",\n  \"number_of_guests\": 2,\n  \"expected_arrival_date\": \"2026-06-25\",\n  \"expected_departure_date\": \"2026-06-30\"\n}"
+        }
+      }
+    },
+    {
+      "name": "5. Check-out - Room 11",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{base_url}}/api/stays/check-out",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"room_number\": \"11\"\n}"
+        }
+      }
+    },
+    {
+      "name": "5b. Check-out - Room 11 (Customer, kỳ vọng 403)",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+        ],
+        "url": "{{base_url}}/api/stays/check-out",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"room_number\": \"11\"\n}"
+        }
+      }
+    },
+    {
+      "name": "6. Do Not Disturb ON - Room 11",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{token}}" }
+        ],
+        "url": "{{base_url}}/api/rooms/11/do-not-disturb",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": true\n}"
+        }
+      }
+    },
+    {
+      "name": "6b. Do Not Disturb OFF - Room 11 (Customer)",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{customer_token}}" }
+        ],
+        "url": "{{base_url}}/api/rooms/11/do-not-disturb",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"status\": false\n}"
+        }
+      }
+    },
+    {
+      "name": "7. Make up room - Room 11 (Customer)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }],
+        "url": "{{base_url}}/api/rooms/11/make-up-room"
+      }
+    },
+    {
+      "name": "7b. Make up room - Room 11 (Receptionist, kỳ vọng 403)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{base_url}}/api/rooms/11/make-up-room"
+      }
+    },
+    {
+      "name": "8. Housekeeping hoàn thành make-up-room - Room 11 (Receptionist)",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Authorization", "value": "Bearer {{token}}" }],
+        "url": "{{base_url}}/api/rooms/11/service"
+      }
+    },
+    {
+      "name": "8b. Housekeeping hoàn thành - Room 11 (Customer, kỳ vọng 403)",
+      "request": {
+        "method": "PATCH",
+        "header": [{ "key": "Authorization", "value": "Bearer {{customer_token}}" }],
+        "url": "{{base_url}}/api/rooms/11/service"
+      }
+    }
+  ]
+}

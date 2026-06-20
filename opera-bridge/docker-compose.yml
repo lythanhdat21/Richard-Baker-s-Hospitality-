@@ -1,49 +1,35 @@
 services:
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: opera_user
-      POSTGRES_PASSWORD: opera_pass
+      POSTGRES_USER: opera
+      POSTGRES_PASSWORD: opera
       POSTGRES_DB: opera_bridge
     ports:
       - "5432:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - opera_bridge_pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U opera_user -d opera_bridge"]
-      interval: 10s
+      test: ["CMD-SHELL", "pg_isready -U opera -d opera_bridge"]
+      interval: 5s
       timeout: 5s
-      retries: 5
+      retries: 10
 
-  mqtt:
-    image: eclipse-mosquitto:2
-    ports:
-      - "1883:1883"
-    volumes:
-      - ./mosquitto.conf:/mosquitto/config/mosquitto.conf
-    healthcheck:
-      test: ["CMD", "mosquitto_sub", "-t", "$$SYS/#", "-C", "1", "-i", "healthcheck", "-W", "3"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  app:
+  api:
     build: .
-    ports:
-      - "8000:8000"
+    restart: unless-stopped
     env_file:
       - .env
     environment:
-      DATABASE_URL: postgresql://opera_user:opera_pass@db:5432/opera_bridge
-      MQTT_HOST: mqtt
-      MQTT_PORT: "1883"
+      DATABASE_URL: postgresql+psycopg2://opera:opera@db:5432/opera_bridge
     depends_on:
       db:
         condition: service_healthy
-      mqtt:
-        condition: service_healthy
-    command: >
-      sh -c "alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 8000"
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./uploads:/app/uploads
 
 volumes:
-  postgres_data:
+  opera_bridge_pgdata:

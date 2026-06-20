@@ -1,154 +1,108 @@
-import uuid
-from sqlalchemy import (
-    Boolean, Column, Integer, Text, ForeignKey,
-    UniqueConstraint, Index, func, TIMESTAMP, String,
-)
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from sqlalchemy.orm import DeclarativeBase, relationship
+from datetime import date, datetime
 
-TIMESTAMPTZ = TIMESTAMP(timezone=True)
+from sqlalchemy import Boolean, Date, DateTime, ForeignKey, Integer, String, Text, func
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from app.db.session import Base
 
 
-class Base(DeclarativeBase):
-    pass
+class User(Base):
+    __tablename__ = "users"
 
-
-class Property(Base):
-    __tablename__ = "properties"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_code = Column(String(64), nullable=False)
-    hotel_id = Column(String(64), nullable=False)
-    name = Column(String(255), nullable=False)
-    opera_base_url = Column(Text, nullable=False)
-    is_active = Column(Boolean, nullable=False, default=True)
-    created_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now())
-    updated_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now(), onupdate=func.now())
-
-    __table_args__ = (
-        UniqueConstraint("property_code", name="uq_properties_property_code"),
-        Index("idx_properties_hotel_id", "hotel_id"),
-        Index("idx_properties_is_active", "is_active"),
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(255), nullable=False)
+    gender: Mapped[str] = mapped_column(String(10), nullable=False)
+    phone_number: Mapped[str] = mapped_column(String(32), unique=True, nullable=False)
+    email: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    avatar: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    role: Mapped[str] = mapped_column(String(20), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-
-    integration_mappings = relationship("IntegrationMapping", back_populates="property")
-    sync_states = relationship("SyncState", back_populates="property")
-    retry_queue = relationship("RetryQueue", back_populates="property")
-    audit_events = relationship("AuditEvent", back_populates="property")
-
-
-class IntegrationMapping(Base):
-    __tablename__ = "integration_mappings"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id = Column(UUID(as_uuid=True), ForeignKey("properties.id"), nullable=False)
-    entity_type = Column(String(64), nullable=False)
-    internal_id = Column(String(128), nullable=False)
-    opera_id = Column(String(128), nullable=True)
-    opera_confirmation_number = Column(String(128), nullable=True)
-    created_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now())
-    updated_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now(), onupdate=func.now())
-
-    __table_args__ = (
-        UniqueConstraint("property_id", "entity_type", "internal_id", name="uq_integration_mappings_internal"),
-        Index("idx_integration_mappings_opera_id", "property_id", "entity_type", "opera_id"),
-        Index("idx_integration_mappings_confirmation", "opera_confirmation_number"),
-    )
-
-    property = relationship("Property", back_populates="integration_mappings")
-
-
-class SyncState(Base):
-    __tablename__ = "sync_states"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id = Column(UUID(as_uuid=True), ForeignKey("properties.id"), nullable=False)
-    sync_type = Column(String(64), nullable=False)
-    last_synced_at = Column(TIMESTAMPTZ, nullable=True)
-    last_success_at = Column(TIMESTAMPTZ, nullable=True)
-    last_error_at = Column(TIMESTAMPTZ, nullable=True)
-    last_error_code = Column(String(128), nullable=True)
-    last_error_message = Column(Text, nullable=True)
-    created_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now())
-    updated_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now(), onupdate=func.now())
-
-    __table_args__ = (
-        UniqueConstraint("property_id", "sync_type", name="uq_sync_states_property_sync"),
-        Index("idx_sync_states_last_success_at", "last_success_at"),
-        Index("idx_sync_states_last_error_at", "last_error_at"),
-    )
-
-    property = relationship("Property", back_populates="sync_states")
-
-
-class ApiRequestLog(Base):
-    __tablename__ = "api_request_logs"
-
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    trace_id = Column(String(128), nullable=False)
-    property_id = Column(UUID(as_uuid=True), ForeignKey("properties.id"), nullable=True)
-    internal_endpoint = Column(Text, nullable=False)
-    opera_endpoint = Column(Text, nullable=True)
-    http_method = Column(String(16), nullable=False)
-    status_code = Column(Integer, nullable=True)
-    success = Column(Boolean, nullable=False)
-    error_code = Column(String(128), nullable=True)
-    duration_ms = Column(Integer, nullable=True)
-    created_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now())
-
-    __table_args__ = (
-        Index("idx_api_request_logs_trace_id", "trace_id"),
-        Index("idx_api_request_logs_property_created", "property_id", "created_at"),
-        Index("idx_api_request_logs_success_created", "success", "created_at"),
-        Index("idx_api_request_logs_error_code", "error_code"),
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
 
-class RetryQueue(Base):
-    __tablename__ = "retry_queue"
+class RoomType(Base):
+    __tablename__ = "room_types"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    property_id = Column(UUID(as_uuid=True), ForeignKey("properties.id"), nullable=False)
-    operation_type = Column(String(64), nullable=False)
-    payload = Column(JSONB, nullable=False)
-    status = Column(String(32), nullable=False, default="pending")
-    attempt_count = Column(Integer, nullable=False, default=0)
-    max_attempts = Column(Integer, nullable=False, default=3)
-    next_retry_at = Column(TIMESTAMPTZ, nullable=True)
-    last_error_code = Column(String(128), nullable=True)
-    last_error_message = Column(Text, nullable=True)
-    created_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now())
-    updated_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now(), onupdate=func.now())
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    code: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
+    name: Mapped[str] = mapped_column(String(100), nullable=False)
+    max_guests: Mapped[int] = mapped_column(Integer, nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    __table_args__ = (
-        Index("idx_retry_queue_status_next_retry", "status", "next_retry_at"),
-        Index("idx_retry_queue_property_operation", "property_id", "operation_type"),
-        Index("idx_retry_queue_created_at", "created_at"),
+    rooms: Mapped[list["Room"]] = relationship(back_populates="room_type")
+
+
+class Room(Base):
+    __tablename__ = "rooms"
+
+    room_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    room_number: Mapped[str] = mapped_column(String(10), unique=True, nullable=False)
+    room_type_id: Mapped[int] = mapped_column(Integer, ForeignKey("room_types.id"), nullable=False)
+    floor: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="Vacant")
+    do_not_disturb: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    make_up_room: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), nullable=False
     )
 
-    property = relationship("Property", back_populates="retry_queue")
+    room_type: Mapped["RoomType"] = relationship(back_populates="rooms")
+    stays: Mapped[list["Stay"]] = relationship(back_populates="room")
 
 
-class AuditEvent(Base):
-    __tablename__ = "audit_events"
+class Reservation(Base):
+    __tablename__ = "reservations"
 
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    trace_id = Column(String(128), nullable=False)
-    property_id = Column(UUID(as_uuid=True), ForeignKey("properties.id"), nullable=False)
-    actor_type = Column(String(32), nullable=False)
-    actor_id = Column(String(128), nullable=True)
-    action = Column(String(128), nullable=False)
-    entity_type = Column(String(64), nullable=False)
-    entity_id = Column(String(128), nullable=False)
-    result = Column(String(32), nullable=False)
-    metadata_ = Column("metadata", JSONB, nullable=True)
-    created_at = Column(TIMESTAMPTZ, nullable=False, server_default=func.now())
+    reservation_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    username: Mapped[str] = mapped_column(String(255), nullable=False)
+    gender: Mapped[str] = mapped_column(String(10), nullable=False)
+    phone_number: Mapped[str] = mapped_column(String(32), nullable=False)
+    number_of_guests: Mapped[int] = mapped_column(Integer, nullable=False)
+    expected_departure_date: Mapped[date] = mapped_column(Date, nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="BOOKED")
 
-    __table_args__ = (
-        Index("idx_audit_events_trace_id", "trace_id"),
-        Index("idx_audit_events_property_created", "property_id", "created_at"),
-        Index("idx_audit_events_entity", "entity_type", "entity_id"),
-        Index("idx_audit_events_action_created", "action", "created_at"),
+    stays: Mapped[list["Stay"]] = relationship(back_populates="reservation")
+
+
+class Stay(Base):
+    __tablename__ = "stays"
+
+    stay_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    reservation_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("reservations.reservation_id"), nullable=False
     )
+    room_id: Mapped[int] = mapped_column(Integer, ForeignKey("rooms.room_id"), nullable=False)
+    username: Mapped[str] = mapped_column(String(255), nullable=False)
+    gender: Mapped[str] = mapped_column(String(10), nullable=False)
+    phone_number: Mapped[str] = mapped_column(String(32), nullable=False)
+    number_of_guests: Mapped[int] = mapped_column(Integer, nullable=False)
+    expected_arrival_date: Mapped[date] = mapped_column(Date, nullable=False)
+    expected_departure_date: Mapped[date] = mapped_column(Date, nullable=False)
+    checked_in_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    checked_in_by: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    checked_out_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    checked_out_by: Mapped[int | None] = mapped_column(Integer, ForeignKey("users.id"), nullable=True)
+    status: Mapped[str] = mapped_column(String(32), nullable=False, default="CHECKED_IN")
 
-    property = relationship("Property", back_populates="audit_events")
+    reservation: Mapped["Reservation"] = relationship(back_populates="stays")
+    room: Mapped["Room"] = relationship(back_populates="stays")
+
+
+class RoomServiceLog(Base):
+    __tablename__ = "room_service_logs"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    stay_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("stays.stay_id"), nullable=True)
+    room_id: Mapped[int] = mapped_column(Integer, ForeignKey("rooms.room_id"), nullable=False)
+    service: Mapped[str] = mapped_column(String(32), nullable=False)
+    action: Mapped[str] = mapped_column(String(32), nullable=False)
+    requested_by: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    requested_role: Mapped[str] = mapped_column(String(20), nullable=False)
+    requested_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), nullable=False
+    )
